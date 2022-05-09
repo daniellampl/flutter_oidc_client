@@ -1,1 +1,1 @@
-# flutter_oidc_client
+# oidc_client

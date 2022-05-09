@@ -27,9 +27,9 @@ class NativeAuthorizationException implements Exception {
 /// {@template authorization_result}
 ///
 /// {@endtemplate}
-class AuthorizationResult {
+class AppleAuthorizationResult {
   /// {@macro authorization_result}
-  const AuthorizationResult({
+  const AppleAuthorizationResult({
     required this.authorizationCode,
     this.userInfo,
   });
@@ -43,7 +43,7 @@ class AuthorizationResult {
 /// {@endtemplate}
 class NativeAuthorization {
   ///
-  Future<AuthorizationResult> apple({
+  Future<AppleAuthorizationResult> apple({
     List<AppleIDAuthorizationScopes> scopes = kDefaultAppleScopes,
   }) async {
     try {
@@ -51,7 +51,7 @@ class NativeAuthorization {
         scopes: scopes,
       );
 
-      return AuthorizationResult(
+      return AppleAuthorizationResult(
         authorizationCode: appleResponse.authorizationCode,
         userInfo: appleResponse.user,
       );

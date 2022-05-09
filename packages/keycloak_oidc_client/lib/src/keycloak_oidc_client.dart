@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:native_authorization/native_authorization.dart';
 import 'package:oidc_client/oidc_client.dart';
 
 const _kGoogleTokenExchangeSubjectIssuer = 'google';

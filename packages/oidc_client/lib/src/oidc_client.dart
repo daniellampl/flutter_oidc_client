@@ -99,11 +99,9 @@ class AuthorizationResult {
   /// {@macro authorization_result}
   const AuthorizationResult({
     required this.authorizationCode,
-    this.userInfo,
   });
 
   final String authorizationCode;
-  final Map<String, dynamic>? userInfo;
 }
 
 /// {@template oidc_client}
@@ -121,7 +119,7 @@ class OIDCClient {
   final FlutterAppAuth _appAuth;
 
   ///
-  Future<AuthorizationResult> authorize({
+  Future<String> authorize({
     List<String>? scope,
     String? nonce,
     OIDCDisplayValue? display,
@@ -155,6 +153,7 @@ class OIDCClient {
           ),
         ),
       );
+
       if (response == null || response.authorizationCode == null) {
         throw const AuthorizeException(
           message: 'No authorization code received from authorization server!',
@@ -162,9 +161,7 @@ class OIDCClient {
         );
       }
 
-      return AuthorizationResult(
-        authorizationCode: response.authorizationCode!,
-      );
+      return response.authorizationCode!;
     } on PlatformException catch (e) {
       throw AuthorizeException(
         message: e.message,

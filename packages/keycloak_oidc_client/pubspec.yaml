@@ -1,23 +1,13 @@
 name: keycloak_oidc_client
 description: A Very Good Project created by Very Good CLI.
 version: 0.0.1-dev.1
-publish_to: none
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
 
 dependencies:
   http: ^0.13.4
-  native_authorization:
-    git:
-      url: https://github.com/daniellampl/oidc_client.git
-      ref: main
-      path: packages/native_authorization/
-  oidc_client:
-    git:
-      url: https://github.com/daniellampl/oidc_client.git
-      ref: main
-      path: packages/oidc_client/
+  oidc_client: ^0.0.1-dev.1
 
 dev_dependencies:
   coverage: ^1.1.0

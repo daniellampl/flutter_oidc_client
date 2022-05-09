@@ -91,9 +91,6 @@ enum AuthorizeErrorCode {
   /// No authorization code was returned from the "authorie" endpoint.
   noAuthorizationCodeReceived,
 
-  /// Native authorization is not supported on the given platform.
-  nativeAuthorizationNotSupported,
-
   /// An unexpected error occurred during authorization.
   failed,
 }

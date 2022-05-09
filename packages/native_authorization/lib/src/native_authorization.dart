@@ -1,7 +1,5 @@
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:oidc_client/src/exceptions.dart';
-import 'package:oidc_client/src/oidc_client.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 const List<AppleIDAuthorizationScopes> kDefaultAppleScopes = [
@@ -14,7 +12,37 @@ const List<String> kDefaultGoogleScopes = [
   'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
-class NativeSignIn {
+/// {@template native_authorization_exception}
+///
+/// {@endtemplate}
+class NativeAuthorizationException implements Exception {
+  /// {@macro native_authorization_exception}
+  const NativeAuthorizationException({
+    this.message,
+  });
+
+  final String? message;
+}
+
+/// {@template authorization_result}
+///
+/// {@endtemplate}
+class AuthorizationResult {
+  /// {@macro authorization_result}
+  const AuthorizationResult({
+    required this.authorizationCode,
+    this.userInfo,
+  });
+
+  final String authorizationCode;
+  final Map<String, dynamic>? userInfo;
+}
+
+/// {@template native_authorization}
+///
+/// {@endtemplate}
+class NativeAuthorization {
+  ///
   Future<AuthorizationResult> apple({
     List<AppleIDAuthorizationScopes> scopes = kDefaultAppleScopes,
   }) async {
@@ -28,11 +56,12 @@ class NativeSignIn {
         userInfo: appleResponse.user,
       );
     } catch (e) {
-      throw AuthorizeException(message: e.toString());
+      throw NativeAuthorizationException(message: e.toString());
     }
   }
 
-  Future<AuthorizationResult> google({
+  ///
+  Future<String?> google({
     List<String> scopes = kDefaultGoogleScopes,
   }) async {
     final googleSignIn = GoogleSignIn(
@@ -42,32 +71,25 @@ class NativeSignIn {
     String? accessToken;
 
     try {
-      final googleAccount = await googleSignIn.signIn();
-      final authentication = await googleAccount!.authentication;
-
       if (await googleSignIn.isSignedIn()) {
         await googleSignIn.disconnect();
       }
 
+      final googleAccount = await googleSignIn.signIn();
+      final authentication = await googleAccount!.authentication;
+
       accessToken = authentication.accessToken;
     } catch (e) {
       if (e is PlatformException) {
-        throw AuthorizeException(message: e.message);
+        throw NativeAuthorizationException(message: e.message);
       } else {
-        throw AuthorizeException(message: e.toString());
+        throw NativeAuthorizationException(message: e.toString());
       }
     }
 
-    if (accessToken == null) {
-      throw const AuthorizeException(
-        message: 'No access token received from Google sign in!',
-        errorCode: AuthorizeErrorCode.noAuthorizationCodeReceived,
-      );
-    }
+    if (accessToken == null) {}
 
-    return AuthorizationResult(
-      authorizationCode: accessToken,
-    );
+    return accessToken;
   }
 }
 

@@ -1,28 +1,6 @@
-import 'dart:io';
-
 import 'package:flutter/services.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:oidc_client/oidc_client.dart';
-import 'package:oidc_client/src/native_sign_in.dart';
-
-/// Describes how the authentication UI should be displayed to the user.
-enum DisplayBehavior {
-  /// The user gets redirected to the browser to display the authentication UI
-  /// of the Authorization Server.
-  browser,
-
-  /// The native authentication UI gets used for authentication.
-  ///
-  /// This will result in exchanging the received authorization code or an
-  /// access token (of the external identity provider) with an [OIDCToken] from
-  /// the Azuthorization Server.
-  nativeIfPossible,
-}
-
-enum NativeIdentityProvider {
-  google,
-  apple,
-}
 
 /// Specifies how the Authorization Server displays the authentication and
 /// consent user interface pages to the End-User
@@ -49,9 +27,6 @@ enum OIDCDisplayValue {
 
 /// Specifies whether the Authorization Server prompts the End-User for
 /// reauthentication and consent.
-///
-/// This is only relevant when the [DisplayBehavior.browser] is used during
-/// authentication.
 enum OIDCPromptValue {
   /// The Authorization Server MUST NOT display any authentication or consent
   /// user interface pages. An error is returned if an End-User is not already
@@ -139,20 +114,14 @@ class OIDCClient {
   OIDCClient({
     required this.config,
     FlutterAppAuth? appAuth,
-    NativeSignIn? nativeSignIn,
-  })  : _appAuth = appAuth ?? FlutterAppAuth(),
-        _nativeSignIn = nativeSignIn ?? NativeSignIn();
+  }) : _appAuth = appAuth ?? FlutterAppAuth();
 
   final OIDCClientConfig config;
 
   final FlutterAppAuth _appAuth;
 
-  final NativeSignIn _nativeSignIn;
-
   ///
   Future<AuthorizationResult> authorize({
-    NativeIdentityProvider? identityProvider,
-    DisplayBehavior displayBehavior = DisplayBehavior.browser,
     List<String>? scope,
     String? nonce,
     OIDCDisplayValue? display,
@@ -164,21 +133,6 @@ class OIDCClient {
     List<String>? acrValues,
     Map<String, String>? parameters,
   }) async {
-    if (displayBehavior == DisplayBehavior.nativeIfPossible) {
-      if (identityProvider == NativeIdentityProvider.apple &&
-          (Platform.isIOS || Platform.isMacOS)) {
-        return _nativeSignIn.apple();
-      } else if (identityProvider == NativeIdentityProvider.google &&
-          Platform.isAndroid) {
-        return _nativeSignIn.google();
-      } else {
-        throw const AuthorizeException(
-          message: 'Native sign in is not supported on this platform!',
-          errorCode: AuthorizeErrorCode.nativeAuthorizationNotSupported,
-        );
-      }
-    }
-
     try {
       final response = await _appAuth.authorize(
         AuthorizationRequest(
@@ -203,7 +157,7 @@ class OIDCClient {
       );
       if (response == null || response.authorizationCode == null) {
         throw const AuthorizeException(
-          message: 'No authorization code received from OIDC server!',
+          message: 'No authorization code received from authorization server!',
           errorCode: AuthorizeErrorCode.noAuthorizationCodeReceived,
         );
       }

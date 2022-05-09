@@ -1,4 +1,4 @@
-name: keycloak_oidc_client
+name: native_authorization
 description: A Very Good Project created by Very Good CLI.
 version: 0.0.1
 publish_to: none
@@ -7,14 +7,12 @@ environment:
   sdk: ">=2.16.0 <3.0.0"
 
 dependencies:
-  http: ^0.13.4
-  native_authorization:
-    path: ../native_authorization
-  oidc_client:
-    path: ../oidc_client
+  flutter:
+    sdk: flutter
+  google_sign_in: ^5.3.0
+  sign_in_with_apple: ^3.3.0
 
 dev_dependencies:
-  coverage: ^1.1.0
-  mocktail: ^0.2.0
+  mocktail: ^0.3.0
   test: ^1.19.2
   very_good_analysis: ^2.4.0

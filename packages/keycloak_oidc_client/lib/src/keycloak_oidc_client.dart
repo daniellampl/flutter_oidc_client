@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:native_authorization/native_authorization.dart';
 import 'package:oidc_client/oidc_client.dart';
 
 const _kGoogleTokenExchangeSubjectIssuer = 'google';
@@ -22,8 +24,22 @@ enum KeycloakIdentityProvider {
   /// Indicates that Keycloak uses Apple as identity provider.
   apple,
 
-  /// Indicates that Keycloak uses Apple as identity provider.
+  /// Indicates that Keycloak uses Faceboook as identity provider.
   facebook,
+}
+
+/// Describes how the authentication UI should be displayed to the user.
+enum DisplayBehavior {
+  /// The user gets redirected to the browser to display the authentication UI
+  /// of the Authorization Server.
+  browser,
+
+  /// The native authentication UI gets used for authentication.
+  ///
+  /// This will result in exchanging the received authorization code or an
+  /// access token (of the external identity provider) with an [OIDCToken] from
+  /// the Azuthorization Server.
+  nativeIfPossible,
 }
 
 /// {@template keycloak_oidc_client}
@@ -33,7 +49,11 @@ class KeycloakOIDCClient extends OIDCClient with OIDCClientMixin {
   /// {@macro keycloak_oidc_client}
   KeycloakOIDCClient({
     required OIDCClientConfig config,
-  }) : super(config: config);
+    NativeAuthorization? nativeAuthorization,
+  })  : _nativeAuthorization = nativeAuthorization ?? NativeAuthorization(),
+        super(config: config);
+
+  final NativeAuthorization _nativeAuthorization;
 
   ///
   Future<OIDCToken> authenticateProvider({
@@ -43,56 +63,45 @@ class KeycloakOIDCClient extends OIDCClient with OIDCClientMixin {
     List<OIDCPromptValue>? prompt,
     String? appIdentifier,
   }) async {
-    if (displayBehavior == DisplayBehavior.nativeIfPossible &&
-        (identityProvider == KeycloakIdentityProvider.apple ||
-            identityProvider == KeycloakIdentityProvider.google)) {
-      try {
-        final authorizationIdentityProvider =
-            identityProvider == KeycloakIdentityProvider.apple
-                ? NativeIdentityProvider.apple
-                : NativeIdentityProvider.google;
-
-        final authorizationResult = await super.authorize(
-          identityProvider: authorizationIdentityProvider,
-          displayBehavior: DisplayBehavior.nativeIfPossible,
-          scope: scopes,
-          prompt: prompt,
+    if (displayBehavior == DisplayBehavior.nativeIfPossible) {
+      if (identityProvider == KeycloakIdentityProvider.apple &&
+          (Platform.isIOS || Platform.isMacOS)) {
+        assert(
+          appIdentifier != null,
+          '"appIdentifier" must not be `null` for apple token exchange!',
         );
 
-        if (identityProvider == KeycloakIdentityProvider.apple) {
-          assert(
-            appIdentifier != null,
-            '"appIdentifier" must not be `null` for apple token exchange!',
-          );
+        final appleResult = await _nativeAuthorization.apple();
 
-          return super.exchangeToken(
-            subjectToken: authorizationResult.authorizationCode,
-            subjectTokenType: _kAppleSubjectTokenType,
-            additionalParameters: {
-              'subject_issuer': _kAppleTokenExchangeSubjectIssuer,
-              'app_identifier': appIdentifier!,
-              'user_profile': jsonEncode(authorizationResult.userInfo),
-            },
-          );
-        } else {
-          return super.exchangeToken(
-            subjectToken: authorizationResult.authorizationCode,
-            subjectTokenType: OIDCSubjectTokenType.accessToken,
-            additionalParameters: {
-              'subject_issuer': _kGoogleTokenExchangeSubjectIssuer,
-            },
-          );
-        }
-      } on AuthorizeException catch (e) {
-        if (e.errorCode == AuthorizeErrorCode.nativeAuthorizationNotSupported) {
-          // ignore if exception was thrown because native sign in is not
-          // possible
-        } else {
-          throw AuthenticationFlowException(
-            code: AuthenticationFlowErrorCode.authorizationFailed,
-            message: e.message,
+        return super.exchangeToken(
+          subjectToken: appleResult.authorizationCode,
+          subjectTokenType: _kAppleSubjectTokenType,
+          scope: scopes,
+          additionalParameters: {
+            'subject_issuer': _kAppleTokenExchangeSubjectIssuer,
+            'app_identifier': appIdentifier!,
+            'user_profile': jsonEncode(appleResult.userInfo),
+          },
+        );
+      } else if (identityProvider == KeycloakIdentityProvider.google &&
+          Platform.isAndroid) {
+        final googleAccessToken = await _nativeAuthorization.google();
+
+        if (googleAccessToken == null) {
+          throw const AuthorizeException(
+            message: 'No access token received from Google sign in!',
+            errorCode: AuthorizeErrorCode.noAuthorizationCodeReceived,
           );
         }
+
+        return super.exchangeToken(
+          subjectToken: googleAccessToken,
+          subjectTokenType: OIDCSubjectTokenType.accessToken,
+          scope: scopes,
+          additionalParameters: {
+            'subject_issuer': _kGoogleTokenExchangeSubjectIssuer,
+          },
+        );
       }
     }
 

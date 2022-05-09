@@ -1,6 +1,7 @@
 name: oidc_client
-description: A starting point for Dart libraries or applications.
+description: A generic Flutter OIDC client on steroids.
 version: 0.0.1-dev.1
+repository: https://github.com/daniellampl/oidc_client/tree/main/packages/oidc_client
 
 environment:
   sdk: ">=2.16.1 <3.0.0"

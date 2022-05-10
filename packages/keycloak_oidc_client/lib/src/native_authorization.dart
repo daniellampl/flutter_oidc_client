@@ -126,7 +126,7 @@ class NativeAuthorization {
   }
 }
 
-extension AuthorizationCredentialAppleIDX on AuthorizationCredentialAppleID {
+extension _AuthorizationCredentialAppleIDX on AuthorizationCredentialAppleID {
   Map<String, dynamic>? get user {
     return <String, dynamic>{
       'name': {

@@ -59,15 +59,17 @@ class OIDCToken {
     required this.refreshToken,
     required this.idToken,
     required this.tokenType,
-    this.accessTokenExpirationDateTime,
     this.scopes,
+    this.accessTokenExpiresAt,
+    this.refreshTokenExpiresAt,
   });
 
   final String accessToken;
   final String refreshToken;
   final String idToken;
   final String tokenType;
-  final DateTime? accessTokenExpirationDateTime;
+  final DateTime? accessTokenExpiresAt;
+  final DateTime? refreshTokenExpiresAt;
   final List<String>? scopes;
 }
 
@@ -251,12 +253,22 @@ class OIDCClient {
   }
 
   OIDCToken _mapTokenResponseToOIDCToken(TokenResponse response) {
+    final refreshExpiresInValue =
+        response.tokenAdditionalParameters?['refresh_expires_in'].toString();
+    final refreshExpiresInSeconds = refreshExpiresInValue != null
+        ? int.tryParse(refreshExpiresInValue)
+        : null;
+
     return OIDCToken(
       accessToken: response.accessToken!,
       refreshToken: response.refreshToken!,
       tokenType: response.tokenType!,
       idToken: response.idToken!,
-      accessTokenExpirationDateTime: response.accessTokenExpirationDateTime,
+      accessTokenExpiresAt: response.accessTokenExpirationDateTime,
+      refreshTokenExpiresAt:
+          refreshExpiresInValue != null && refreshExpiresInSeconds! > 0
+              ? DateTime.now().add(Duration(seconds: refreshExpiresInSeconds))
+              : null,
       scopes: response.scopes,
     );
   }

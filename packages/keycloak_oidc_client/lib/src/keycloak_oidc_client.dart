@@ -59,7 +59,7 @@ class KeycloakOIDCClient extends OIDCClient with OIDCClientMixin {
   final NativeAuthorization _nativeAuthorization;
 
   ///
-  Future<OIDCToken> authenticateProvider({
+  Future<OIDCToken> authenticate({
     KeycloakIdentityProvider? identityProvider,
     DisplayBehavior displayBehavior = DisplayBehavior.browser,
     List<String>? scopes,

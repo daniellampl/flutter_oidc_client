@@ -2,6 +2,7 @@ name: keycloak_oidc_client
 description: A Flutter OIDC client on steroids optimized for Keycloak.
 version: 0.0.1-dev.1
 repository: https://github.com/daniellampl/oidc_client/tree/main/packages/keycloak_oidc_client
+publish_to: none
 
 environment:
   sdk: ">=2.16.0 <3.0.0"
@@ -9,6 +10,10 @@ environment:
 dependencies:
   google_sign_in: ^5.3.0
   http: ^0.13.4
+  oidc_client:
+    git:
+      url: https://github.com/daniellampl/oidc_client.git
+      path: packages/oidc_client/
   sign_in_with_apple: ^3.3.0
 
 dev_dependencies:

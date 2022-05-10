@@ -1,5 +1,4 @@
 import 'package:flutter/services.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 /// Describes why an authentication flow failed.
 enum AuthenticationFlowErrorCode {
@@ -10,75 +9,50 @@ enum AuthenticationFlowErrorCode {
   userAlreadyExists,
 
   /// The user cancelled the authentication flow.
-  cancelled,
+  canceled,
 
   /// No token was returned from the authentication server.
   noTokenReceived,
+
+  /// No authorization code was returned by the identity provider.
+  noAuthorizationCodeReceived,
 
   /// An unexpected error occurred during the authentication flow.
   failed,
 }
 
 /// Thrown when an authentication flow fails.
-class AuthenticationFlowException implements Exception {
-  const AuthenticationFlowException({
+class AuthenticateException implements Exception {
+  const AuthenticateException({
     this.code = AuthenticationFlowErrorCode.failed,
     this.message,
   });
 
-  factory AuthenticationFlowException.fromPlatformException(
+  factory AuthenticateException.fromPlatformException(
     PlatformException exception,
   ) {
     final message = exception.message;
 
     if (message == null) {
-      throw const AuthenticationFlowException();
+      throw const AuthenticateException();
     }
 
     if (message.contains('User cancelled flow') ||
         message.contains('The operation couldn’t be completed.')) {
-      return AuthenticationFlowException(
-        code: AuthenticationFlowErrorCode.cancelled,
+      return AuthenticateException(
+        code: AuthenticationFlowErrorCode.canceled,
         message: exception.message,
       );
     } else if (message.contains('User already exists')) {
-      return AuthenticationFlowException(
+      return AuthenticateException(
         code: AuthenticationFlowErrorCode.userAlreadyExists,
         message: exception.message,
       );
     }
 
-    throw AuthenticationFlowException(
+    throw AuthenticateException(
       message: exception.message,
     );
-  }
-
-  factory AuthenticationFlowException.fromSignInWithAppleException(
-    SignInWithAppleException exception,
-  ) {
-    if (exception is SignInWithAppleAuthorizationException) {
-      if (exception.code == AuthorizationErrorCode.canceled) {
-        return AuthenticationFlowException(
-          code: AuthenticationFlowErrorCode.cancelled,
-          message: exception.message,
-        );
-      } else {
-        return AuthenticationFlowException(
-          code: AuthenticationFlowErrorCode.cancelled,
-          message: exception.message,
-        );
-      }
-    } else if (exception is SignInWithAppleCredentialsException) {
-      return AuthenticationFlowException(
-        message: exception.message,
-      );
-    } else if (exception is PlatformException) {
-      return AuthenticationFlowException(
-        message: (exception as PlatformException).message,
-      );
-    } else {
-      return const AuthenticationFlowException();
-    }
   }
 
   final String? message;
@@ -86,32 +60,8 @@ class AuthenticationFlowException implements Exception {
   final AuthenticationFlowErrorCode code;
 }
 
-/// Describes why an OIDCauthorization attempt failed.
-enum AuthorizeErrorCode {
-  /// No authorization code was returned from the "authorie" endpoint.
-  noAuthorizationCodeReceived,
-
-  /// An unexpected error occurred during authorization.
-  failed,
-}
-
-/// Thrown when the user authorization fails.
-class AuthorizeException implements Exception {
-  const AuthorizeException({
-    this.errorCode = AuthorizeErrorCode.failed,
-    this.message,
-  });
-
-  final AuthorizeErrorCode errorCode;
-
-  final String? message;
-}
-
 /// Thrown when the token exchange authentication fails.
-class TokenExchangeFailedException implements Exception {}
+class TokenExchangeException implements Exception {}
 
 /// Thrown when the refreshing process for an access token failed.
-class TokenRefreshFailedException implements Exception {}
-
-/// Thrown when the logout request failed.
-class LogoutFailedException implements Exception {}
+class TokenRefreshException implements Exception {}

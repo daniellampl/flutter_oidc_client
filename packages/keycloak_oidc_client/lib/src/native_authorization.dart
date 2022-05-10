@@ -12,6 +12,11 @@ const List<String> kDefaultGoogleScopes = [
   'https://www.googleapis.com/auth/userinfo.profile',
 ];
 
+enum NativeAuthorizationErrorCode {
+  canceled,
+  failed,
+}
+
 /// {@template native_authorization_exception}
 ///
 /// {@endtemplate}
@@ -19,9 +24,39 @@ class NativeAuthorizationException implements Exception {
   /// {@macro native_authorization_exception}
   const NativeAuthorizationException({
     this.message,
+    this.code = NativeAuthorizationErrorCode.failed,
   });
 
+  factory NativeAuthorizationException.fromSignInWithAppleException(
+    SignInWithAppleException exception,
+  ) {
+    if (exception is SignInWithAppleAuthorizationException) {
+      if (exception.code == AuthorizationErrorCode.canceled) {
+        return NativeAuthorizationException(
+          code: NativeAuthorizationErrorCode.canceled,
+          message: exception.message,
+        );
+      } else {
+        return NativeAuthorizationException(
+          message: exception.message,
+        );
+      }
+    } else if (exception is SignInWithAppleCredentialsException) {
+      return NativeAuthorizationException(
+        message: exception.message,
+      );
+    } else if (exception is PlatformException) {
+      return NativeAuthorizationException(
+        message: (exception as PlatformException).message,
+      );
+    } else {
+      return const NativeAuthorizationException();
+    }
+  }
+
   final String? message;
+
+  final NativeAuthorizationErrorCode code;
 }
 
 /// {@template authorization_result}
@@ -86,8 +121,6 @@ class NativeAuthorization {
         throw NativeAuthorizationException(message: e.toString());
       }
     }
-
-    if (accessToken == null) {}
 
     return accessToken;
   }

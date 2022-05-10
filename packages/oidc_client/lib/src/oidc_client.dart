@@ -92,18 +92,6 @@ class OIDCClientConfig {
   final List<String> scope;
 }
 
-/// {@template authorization_result}
-///
-/// {@endtemplate}
-class AuthorizationResult {
-  /// {@macro authorization_result}
-  const AuthorizationResult({
-    required this.authorizationCode,
-  });
-
-  final String authorizationCode;
-}
-
 /// {@template oidc_client}
 ///
 /// {@endtemplate}
@@ -119,58 +107,7 @@ class OIDCClient {
   final FlutterAppAuth _appAuth;
 
   ///
-  Future<String> authorize({
-    List<String>? scope,
-    String? nonce,
-    OIDCDisplayValue? display,
-    List<OIDCPromptValue>? prompt,
-    int? maxAge,
-    List<String>? uiLocales,
-    String? idTokenHint,
-    String? loginHint,
-    List<String>? acrValues,
-    Map<String, String>? parameters,
-  }) async {
-    try {
-      final response = await _appAuth.authorize(
-        AuthorizationRequest(
-          config.clientId,
-          config.redirectUrl,
-          discoveryUrl: config.discoveryUrl,
-          scopes: _transformScopes(scope ?? config.scope),
-          promptValues: prompt != null
-              ? prompt.map(_promptValueToString).toSet().toList()
-              : [],
-          loginHint: loginHint,
-          additionalParameters: _buildAdditionalParameters(
-            acrValues: acrValues,
-            display: display,
-            idTokenHint: idTokenHint,
-            maxAge: maxAge,
-            nonce: nonce,
-            parameters: parameters,
-            uiLocales: uiLocales,
-          ),
-        ),
-      );
-
-      if (response == null || response.authorizationCode == null) {
-        throw const AuthorizeException(
-          message: 'No authorization code received from authorization server!',
-          errorCode: AuthorizeErrorCode.noAuthorizationCodeReceived,
-        );
-      }
-
-      return response.authorizationCode!;
-    } on PlatformException catch (e) {
-      throw AuthorizeException(
-        message: e.message,
-      );
-    }
-  }
-
-  ///
-  Future<OIDCToken> authenticate({
+  Future<OIDCToken> authenticateViaBrowser({
     List<String>? scope,
     String? nonce,
     OIDCDisplayValue? display,
@@ -206,7 +143,7 @@ class OIDCClient {
       );
 
       if (tokenResponse == null) {
-        throw const AuthenticationFlowException(
+        throw const AuthenticateException(
           code: AuthenticationFlowErrorCode.noTokenReceived,
           message: 'No token response received!',
         );
@@ -214,7 +151,7 @@ class OIDCClient {
 
       return _mapTokenResponseToOIDCToken(tokenResponse);
     } on PlatformException catch (e) {
-      throw AuthenticationFlowException.fromPlatformException(e);
+      throw AuthenticateException.fromPlatformException(e);
     }
   }
 
@@ -248,7 +185,7 @@ class OIDCClient {
       );
 
       if (tokenResponse == null) {
-        throw const AuthenticationFlowException(
+        throw const AuthenticateException(
           code: AuthenticationFlowErrorCode.noTokenReceived,
           message: 'No token response received!',
         );
@@ -256,14 +193,13 @@ class OIDCClient {
 
       return _mapTokenResponseToOIDCToken(tokenResponse);
     } on PlatformException catch (e) {
-      throw AuthenticationFlowException.fromPlatformException(e);
+      throw AuthenticateException.fromPlatformException(e);
     }
   }
 
   ///
   Future<OIDCToken> refreshToken({
     required String refreshToken,
-    String grantType = GrantType.refreshToken,
   }) async {
     try {
       final tokenResponse = await _appAuth.token(
@@ -272,19 +208,19 @@ class OIDCClient {
           config.redirectUrl,
           refreshToken: refreshToken,
           discoveryUrl: config.discoveryUrl,
-          grantType: grantType,
+          grantType: GrantType.refreshToken,
         ),
       );
 
       if (tokenResponse == null) {
-        throw const AuthenticationFlowException(
+        throw const AuthenticateException(
           code: AuthenticationFlowErrorCode.noTokenReceived,
           message: 'No token response received!',
         );
       }
       return _mapTokenResponseToOIDCToken(tokenResponse);
     } on PlatformException catch (e) {
-      throw AuthenticationFlowException.fromPlatformException(e);
+      throw AuthenticateException.fromPlatformException(e);
     }
   }
 

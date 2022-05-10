@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:keycloak_oidc_client/src/native_authorization.dart';
 import 'package:oidc_client/oidc_client.dart';
 
 const _kGoogleTokenExchangeSubjectIssuer = 'google';
@@ -41,6 +42,9 @@ enum DisplayBehavior {
   nativeIfPossible,
 }
 
+/// Thrown when the logout request failed.
+class LogoutFailedException implements Exception {}
+
 /// {@template keycloak_oidc_client}
 /// An OIDC client that interacts with a Keycloak authentication server.
 /// {@endtemplate}
@@ -70,7 +74,20 @@ class KeycloakOIDCClient extends OIDCClient with OIDCClientMixin {
           '"appIdentifier" must not be `null` for apple token exchange!',
         );
 
-        final appleResult = await _nativeAuthorization.apple();
+        final AppleAuthorizationResult appleResult;
+
+        try {
+          appleResult = await _nativeAuthorization.apple();
+        } on NativeAuthorizationException catch (e) {
+          if (e.code == NativeAuthorizationErrorCode.canceled) {
+            throw AuthenticateException(
+              message: e.message,
+              code: AuthenticationFlowErrorCode.canceled,
+            );
+          } else {
+            throw AuthenticateException(message: e.message);
+          }
+        }
 
         return super.exchangeToken(
           subjectToken: appleResult.authorizationCode,
@@ -84,12 +101,18 @@ class KeycloakOIDCClient extends OIDCClient with OIDCClientMixin {
         );
       } else if (identityProvider == KeycloakIdentityProvider.google &&
           Platform.isAndroid) {
-        final googleAccessToken = await _nativeAuthorization.google();
+        final String? googleAccessToken;
+
+        try {
+          googleAccessToken = await _nativeAuthorization.google();
+        } on NativeAuthorizationException catch (e) {
+          throw AuthenticateException(message: e.message);
+        }
 
         if (googleAccessToken == null) {
-          throw const AuthorizeException(
+          throw const AuthenticateException(
             message: 'No access token received from Google sign in!',
-            errorCode: AuthorizeErrorCode.noAuthorizationCodeReceived,
+            code: AuthenticationFlowErrorCode.noAuthorizationCodeReceived,
           );
         }
 
@@ -120,7 +143,7 @@ class KeycloakOIDCClient extends OIDCClient with OIDCClientMixin {
       parameters[_kIdentityProviderHintParam] = identityProviderHint;
     }
 
-    return super.authenticate(
+    return super.authenticateViaBrowser(
       scope: scopes,
       prompt: prompt,
       parameters: parameters,

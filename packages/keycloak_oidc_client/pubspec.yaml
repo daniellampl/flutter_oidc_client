@@ -7,8 +7,9 @@ environment:
   sdk: ">=2.16.0 <3.0.0"
 
 dependencies:
+  google_sign_in: ^5.3.0
   http: ^0.13.4
-  oidc_client: ^0.0.1-dev.1
+  sign_in_with_apple: ^3.3.0
 
 dev_dependencies:
   coverage: ^1.1.0
